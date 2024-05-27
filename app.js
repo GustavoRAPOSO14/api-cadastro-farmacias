@@ -12,7 +12,7 @@ const Produtos = require("./models/Produtos")
 
 //Registrar o produto:
 app.post("/auth/register/produto", async(req, res) => {
-    const{nome, preco} = req.body
+    const{nome, preco, quantidade} = req.body
 
     //Validações:
     if (!nome){
@@ -23,9 +23,14 @@ app.post("/auth/register/produto", async(req, res) => {
         return res.status(422).json({msg: "O preço do produto é obrigatório!"})
     }
 
+    if (!quantidade){
+        return res.status(422).json({msg: "A quantidade de produto é obrigatória!"})
+    }
+
     const produto = new Produtos({
         nome,
-        preco
+        preco,
+        quantidade
     })
 
     try {
