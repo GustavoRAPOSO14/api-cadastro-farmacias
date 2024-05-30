@@ -10,6 +10,44 @@ app.use(express.json())
 //Models
 const Produtos = require("./models/Produtos")
 
+
+//teste
+app.get('/', (req, res) => {
+    res.status(200).json({msg: 'Teste postman'})
+})
+
+
+//Acessando todos os produtos:
+app.get("/produtos", async (req, res) => {
+
+    try {
+
+        const produtos = await Produtos.find()
+
+        res.status(200).json(produtos)
+        
+    } catch (error) {
+        res.status(500).json({error: error})
+    }
+
+})
+
+//Acessar produto por ID
+app.get("/produtos/:id", async (req, res) => {
+
+    const id = req.params.id
+
+    const produto = await Produtos.findById(id)
+
+    if (!produto) {
+        return res.status(404).json({msg: 'Produto inexistente'})
+    }
+
+    res.status(200).json({produto})
+
+})
+
+
 //Registrar o produto:
 app.post("/auth/register/produto", async(req, res) => {
     const{nome, preco, quantidade} = req.body
