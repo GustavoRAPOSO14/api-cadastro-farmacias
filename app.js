@@ -4,14 +4,23 @@ const express = require("express")
 const mongoose = require("mongoose")
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
+const cors = require("cors")
 
 const app = express()
 
 //Configurando a leitura de arquivos json:
 app.use(express.json())
 
+app.use(cors())
+
 //Modelos (tabelas)
 const User = require("./models/User")
+
+app.use(cors({
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  }))
 
 //Rota de usuário deslogado
 app.get("/", (req, res) => {
@@ -54,13 +63,13 @@ function checkToken(req, res, next) {
 
 //Cadastro do usuário:
 app.post("/auth/register", async (req, res) => {
-    const { nomeUser, telefoneUser, cpf, senhaUser, cepUser, numeroUser, complementoUser, confirmSenhaUser } = req.body
+    const { nomeUser, mailUser, cpf, senhaUser, cepUser, numeroUser, complementoUser, confirmSenhaUser } = req.body
 
     //Validação dos dados
     if (!nomeUser) {
         return res.status(422).json({ msg: "O nome é obrigatório!" })
     }
-    if (!telefoneUser) {
+    if (!mailUser) {
         return res.status(422).json({ msg: "O telefone é obrigatório!" })
     }
     if (!cpf) {
@@ -86,7 +95,7 @@ app.post("/auth/register", async (req, res) => {
     }
 
     //Checando se o cpf já está cadastrado
-    const userExists = await User.findOne({ telefoneUser: telefoneUser })
+    const userExists = await User.findOne({ mailUser: mailUser })
 
     if (userExists) {
         return res.status(422).json({ msg: "Este telefone já está cadastrado. tente novamente com um novo." })
@@ -103,7 +112,7 @@ app.post("/auth/register", async (req, res) => {
     //Fazendo a inserção dos dados
     const user = new User({
         nomeUser,
-        telefoneUser,
+        mailUser,
         cpf: cpfHash,
         senhaUser: passwordHash,
         cepUser,
@@ -128,18 +137,18 @@ app.post("/auth/register", async (req, res) => {
 
 //Rota de Login
 app.post("/auth/login", async (req, res) => {
-    const { telefoneUser, senhaUser } = req.body
+    const { mailUser, senhaUser } = req.body
 
     //Validando dados
-    if (!telefoneUser) {
-        return res.status(422).json({ msg: "O telefone é obrigatório!" })
+    if (!mailUser) {
+        return res.status(422).json({ msg: "O e-mail é obrigatório!" })
     }
     if (!senhaUser) {
         return res.status(422).json({ msg: "A senha é obrigatória!" })
     }
 
     //Checando se o usuário existe
-    const user = await User.findOne({ telefoneUser: telefoneUser })
+    const user = await User.findOne({ mailUser: mailUser })
 
     if (!user) {
         return res.status(404).json({ msg: "Usuário não encontrado." })
@@ -181,7 +190,7 @@ const dbPass = process.env.DB_PASS
 
 //Conexão com o banco
 mongoose.connect(`mongodb+srv://${dbUser}:${dbPass}@guilherme.zmse9y1.mongodb.net/?retryWrites=true&w=majority&appName=Guilherme`).then(() => {
-    app.listen(3000)
+    app.listen(3003)
     console.log("Conectado ao MongoDB")
 }).catch((err) => {
     console.log((err))
