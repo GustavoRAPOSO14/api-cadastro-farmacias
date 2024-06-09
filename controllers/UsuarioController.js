@@ -85,6 +85,13 @@ router.post('/auth/register', async(req, res) =>{
         return res.status(422).json({msg: 'Um usuário já foi cadastrado com esse número de CPF!'})
     }
 
+    //Verifica se o email já foi usado
+    const emailExists = await Usuario.findOne({ email: email})
+
+    if (emailExists){
+        return res.status(422).json({msg: 'Um usuário já foi cadastrado com esse email!'})
+    }
+
     //criando a senha
     const salt = await bcrypt.genSalt(12)
     const passwordHash = await bcrypt.hash(senha, salt)
