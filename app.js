@@ -9,6 +9,8 @@ const app = express()
 app.use(cors())
 app.options("*", cors())
 
+const port = process.env.PORT || 3000;
+
 //Config JSON response
 app.use(
     express.urlencoded({
@@ -47,7 +49,7 @@ const dbUser = process.env.DB_USER
 const dbPassword = process.env.DB_PASS
 
 mongoose.connect(`mongodb+srv://${dbUser}:${dbPassword}@guilherme.zmse9y1.mongodb.net/?retryWrites=true&w=majority&appName=Guilherme`).then(() => {
-    app.listen(3000)
+    app.listen(port)
     console.log("Conectou ao banco")
 }).catch((err) => console.log(err))
 
