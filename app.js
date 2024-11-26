@@ -7,6 +7,7 @@ const cors = require('cors')
 const app = express()
 
 app.use(cors())
+app.options("*", cors())
 
 //Config JSON response
 app.use(
@@ -32,6 +33,9 @@ app.use('/produtos', ProdutoController)
 
 const UsuarioController = require('./controllers/UsuarioController')
 app.use('/usuarios', UsuarioController)
+
+const PedidoController = require('./controllers/PedidoController')
+app.use('/pedidos', PedidoController)
 
 
 
