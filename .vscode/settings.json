@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/97ef8eef-c693-4337-9ace-e5549a59b182/resourceGroups/farmafacil/providers/Microsoft.Web/sites/farmafacil-api",
+    "appService.deploySubpath": "."
+}

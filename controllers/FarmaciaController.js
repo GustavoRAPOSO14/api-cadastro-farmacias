@@ -1,5 +1,6 @@
 const router = require('express').Router()
 const Farmacia = require('../models/Farmacia')
+const Produtos = require('../models/Produtos')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 
@@ -47,7 +48,7 @@ function checkToken(req, res, next){
 // Registrar Farmácias
 router.post('/auth/register', async(req, res) =>{
 
-    const {cnpj, nome, email, senha, confirmasenha, cep} = req.body
+    const {cnpj, nome, rede, email, senha, confirmasenha, rua, bairro, numero, cep, uf, cidade} = req.body
 
     //validações
     if (!nome){
@@ -56,6 +57,30 @@ router.post('/auth/register', async(req, res) =>{
 
     if (!cnpj){
         return res.status(422).json({msg: 'O CNPJ é obrigatório'})
+    }
+
+    if (!rede){
+        return res.status(422).json({msg: 'A rede é obrigatória'})
+    }
+
+    if (!rua){
+        return res.status(422).json({msg: 'A rua é obrigatória'})
+    }
+
+    if (!bairro){
+        return res.status(422).json({msg: 'O bairro é obrigatório'})
+    }
+
+    if (!numero){
+        return res.status(422).json({msg: 'O número é obrigatório'})
+    }
+
+    if (!uf){
+        return res.status(422).json({msg: 'A uf é obrigatória'})
+    }
+
+    if (!cidade){
+        return res.status(422).json({msg: 'A cidade é obrigatória'})
     }
 
     if (!email){
@@ -92,9 +117,15 @@ router.post('/auth/register', async(req, res) =>{
     const farmacia = new Farmacia({
         cnpj,
         nome,
+        rede,
         email,
         senha: passwordHash,
+        rua,
+        bairro,
+        numero,
         cep,
+        uf,
+        cidade
     })
 
     try {
@@ -114,11 +145,15 @@ router.post('/auth/register', async(req, res) =>{
 //Login da Farmacia
 router.post('/auth/login', async (req, res) => {
 
-    const {cnpj, senha} = req.body
+    const {cnpj, email, senha} = req.body
 
     //validações
     if (!cnpj){
         return res.status(422).json({msg: 'O CNPJ é obrigatório'})
+    }
+
+    if (!email){
+        return res.status(422).json({msg: 'O email é obrigatório'})
     }
 
     if (!senha){
@@ -164,7 +199,7 @@ router.post('/auth/login', async (req, res) => {
 router.patch('/:id', async (req, res) => {
 
     const id = req.params.id
-    const {cnpj, nome, email, senha, cep} = req.body
+    const {cnpj, nome, rede, email, senha, rua, bairro, numero, cep, uf, cidade} = req.body
 
     // verifica se o cnpj já foi cadastrado
     const farmaExists = await Farmacia.findOne({ cnpj: cnpj})
@@ -174,7 +209,7 @@ router.patch('/:id', async (req, res) => {
     }
 
     try {
-        const farmaciaUpdated = await Farmacia.findByIdAndUpdate(id, {cnpj, nome, email, cep})
+        const farmaciaUpdated = await Farmacia.findByIdAndUpdate(id, {cnpj, nome, rede, email, rua, bairro, numero, cep, uf, cidade})
 
         if (!farmaciaUpdated){
             return res.status(404).json({msg: "Farmácia não encontrada"})
@@ -191,26 +226,32 @@ router.patch('/:id', async (req, res) => {
 
 //Deleta os dados da farmácia
 router.delete('/:id', async (req, res) => {
+    const id = req.params.id;
 
-    const id = req.params.id
+    // Verifica se a farmácia existe
+    const farma = await Farmacia.findById(id, '-senha');
 
-    //verifica se a farmácia existe
-    const farma = await Farmacia.findById(id, '-senha')
-
-    if (!farma){
-        return res.status(404).json({msg: "Farmácia não encontrada"})
+    if (!farma) {
+        return res.status(404).json({ msg: "Farmácia não encontrada" });
     }
 
     try {
+        // Deleta os produtos associados à farmácia
+        await Produtos.deleteMany({ farmacia: id });
 
-        await Farmacia.findByIdAndDelete(id)
-        res.status(200).json({msg: "Farmácia excluída com sucesso!"})
+        // Deleta a farmácia
+        await Farmacia.findByIdAndDelete(id);
+
+        res.status(200).json({ msg: "Farmácia excluída com sucesso!" });
         
     } catch (error) {
-        res.status(500).json({msg: "Algo deu errado. Tenta novamente mais tarde!"})
+        console.error(error);
+        res.status(500).json({ msg: "Algo deu errado. Tenta novamente mais tarde!" });
     }
+});
 
-})
+
+
 
 
 module.exports = router

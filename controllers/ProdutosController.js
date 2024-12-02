@@ -6,7 +6,10 @@ const Produtos = require('../models/Produtos')
 router.get("/", async (req, res) => {
 
     try {
-        const produtos = await Produtos.find()
+        const produtos = await Produtos.find().populate('farmacia', 'nome')
+        if (produtos.length === 0){
+            return res.status(404).json({ msg: 'Não há produtos cadastrados' });
+        }
 
         res.status(200).json(produtos)
         
@@ -37,15 +40,19 @@ router.get("/:id", async (req, res) => {
 //Registrar o produto:
 router.post("/auth/register", async(req, res) => {
 
-    const{EAN, nome, preco, quantidade, dosagem} = req.body
+    const{farmacia, nome, nome_quimico, preco, quantidade, validade, lote, label} = req.body
 
     //Validações:
-    if (!EAN){
-        return res.status(422).json({msg: "O código EAN do produto é obrigatório!"})
+    if (!farmacia){
+        return res.status(422).json({msg: "O id da farmácia é obrigatório!"})
     }
 
     if (!nome){
         return res.status(422).json({msg: "O nome do produto é obrigatório!"})
+    }
+
+    if (!nome_quimico){
+        return res.status(422).json({msg: "O nome químico do produto é obrigatório!"})
     }
 
     if (!preco){
@@ -56,16 +63,27 @@ router.post("/auth/register", async(req, res) => {
         return res.status(422).json({msg: "A quantidade do produto é obrigatória!"})
     }
 
-    if (!dosagem){
-        return res.status(422).json({msg: "A dosagem de produto é obrigatória!"})
+    if (!validade){
+        return res.status(422).json({msg: "A validade do produto é obrigatória!"})
+    }
+
+    if (!lote){
+        return res.status(422).json({msg: "O lote do produto é obrigatório!"})
+    }
+
+    if (!label){
+        return res.status(422).json({msg: "O rótulo do produto é obrigatório!"})
     }
 
     const produto = new Produtos({
-        EAN,
+        farmacia,
         nome,
+        nome_quimico,
         preco,
         quantidade,
-        dosagem
+        validade,
+        lote,
+        label
     })
 
     try {
@@ -79,14 +97,14 @@ router.post("/auth/register", async(req, res) => {
 })
 
 
-//Atualiza dados da Farmácia
+//Atualiza dados do Produto
 router.patch('/:id', async (req, res) => {
 
     const id = req.params.id
-    const {EAN, nome, preco, quantidade, dosagem} = req.body
+    const {farmacia, nome, nome_quimico, preco, quantidade, validade, lote, label} = req.body
 
     try {
-        const produtoUpdated = await Produtos.findByIdAndUpdate(id, {EAN, nome, preco, quantidade, dosagem})
+        const produtoUpdated = await Produtos.findByIdAndUpdate(id, {nome, nome_quimico, preco, quantidade, validade, lote, label})
 
         if (!produtoUpdated){
             return res.status(404).json({msg: "Produto não encontrado"})
