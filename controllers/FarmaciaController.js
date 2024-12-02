@@ -176,6 +176,8 @@ router.post('/auth/login', async (req, res) => {
 
 
     try {
+
+        const farma_id = farma._id
         
         const secret = process.env.SECRET 
 
@@ -185,7 +187,7 @@ router.post('/auth/login', async (req, res) => {
         secret,
     )
 
-    res.status(200).json({msg: "Autentificação realizada com sucesso!", token})
+    res.status(200).json({msg: "Autentificação realizada com sucesso!", token, farma_id})
 
     } catch (error) {
         console.log(error)
