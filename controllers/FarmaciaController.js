@@ -224,7 +224,7 @@ router.patch('/:id', async (req, res) => {
 })
 
 
-//Deleta os dados da farmácia
+//Deleta os dados da farmácia 
 router.delete('/:id', async (req, res) => {
     const id = req.params.id;
 
