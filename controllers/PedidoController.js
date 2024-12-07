@@ -181,6 +181,27 @@ router.get('/:id', async (req, res) => {
 
 });
 
+
+router.get('/farmacia/:farmaciaId', async (req, res) => {
+    try {
+      const farmaciaId = req.params.farmaciaId;
+      
+      // Buscar os produtos que pertencem à farmácia com o id fornecido
+      const pedidos = await Pedido.find({ 'farmacia': farmaciaId });
+  
+      // Verificar se encontramos produtos
+      if (pedidos.length === 0) {
+        return res.status(404).json({ message: 'Nenhum pedido foi feito ainda' });
+      }
+  
+      // Retornar os produtos encontrados
+      res.json(pedidos);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Erro ao buscar produtos' });
+    }
+  });
+
 // atualiza o status do pedido
 router.put('/:id', async (req, res) => {
     const pedido = await Pedido.findByIdAndUpdate(
