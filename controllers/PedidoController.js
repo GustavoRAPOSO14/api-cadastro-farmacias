@@ -118,7 +118,7 @@ router.post('/', async (req, res) => {
     
         const precoTotal = totalPrices.reduce((a, b) => a + b, 0)
 
-        const {endereco1, endereco2, city, cep, pais, telefone, status, usuario} = req.body
+        const {endereco1, endereco2, city, cep, pais, telefone, status, usuario, farmacia} = req.body
 
         if (!endereco1){
             return res.status(422).json({msg: 'O endereço é obrigatório'})
@@ -150,7 +150,8 @@ router.post('/', async (req, res) => {
             telefone: telefone,
             status: status,
             precoTotal: precoTotal,
-            usuario: usuario
+            usuario: usuario,
+            farmacia: farmacia,
         });
 
         const savedPedido = await pedido.save();
@@ -168,6 +169,7 @@ router.get('/:id', async (req, res) => {
     const id = req.params.id
     const pedido = await Pedido.findById(id)
     .populate('usuario', 'nome')
+    .populate('farmacia', 'nome')
     .populate({ path: 'itensPedido', populate: 'product'});
 
     

@@ -23,6 +23,10 @@ const Pedido = mongoose.model('Pedido', {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Usuarios'
     },
+    farmacia: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Farmacia'
+    },
     dataPedido:{
         type: Date,
         default: Date.now,
