@@ -227,15 +227,15 @@ router.delete('/:id', async (req, res) => {
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: 'https://api-cadastro-farmacias.onrender.com/usuarios/auth/google/callback'
+    callbackURL: 'http://localhost:3000/usuarios/auth/google/callback'
 }, async (acessToken, refreshToken, profile, done) => {
     try {
 
         //verifica se o usuário existe
-        const user = await Usuario.findOne({googleId: profile.id})
+        const user = await Usuario.findOne({email: profile.emails[0].value})
 
         if (user) {
-            return (done, user)
+            return done(null, user)
         }
 
         //criando a senha
