@@ -227,7 +227,7 @@ router.delete('/:id', async (req, res) => {
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: 'http://localhost:3000/usuarios/auth/google/callback'
+    callbackURL: 'https://api-cadastro-farmacias.onrender.com/usuarios/auth/google/callback'
 }, async (acessToken, refreshToken, profile, done) => {
     try {
 
