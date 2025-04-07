@@ -2,6 +2,8 @@ require('dotenv').config()
 const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
+const passport = require('passport')
+const session = require('express-session')
 
 
 const app = express()
@@ -18,6 +20,16 @@ app.use(
     }),
 )
 app.use(express.json())
+
+
+app.use(session({
+    secret: 'secret',
+    resave: false,
+    saveUninitialized: true,
+}))
+
+app.use(passport.initialize())
+app.use(passport.session())
 
 
 
