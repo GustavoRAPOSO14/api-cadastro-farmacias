@@ -232,10 +232,10 @@ passport.use(new GoogleStrategy({
     try {
 
         //verifica se o usuário existe
-        const user = await Usuario.findOne({googleId: profile.id})
+        const user = await Usuario.findOne({email: profile.emails[0].value})
 
         if (user) {
-            return (done, user)
+            return done(null, user)
         }
 
         //criando a senha
