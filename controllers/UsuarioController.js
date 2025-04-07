@@ -2,6 +2,8 @@ const router = require('express').Router()
 const Usuario = require('../models/Usuario')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy
 
 
 //Rota privada
@@ -100,7 +102,8 @@ router.post('/auth/register', async(req, res) =>{
     const usuario = new Usuario({
         nome,
         email,
-        senha: passwordHash
+        senha: passwordHash,
+        googleId: null
     })
 
     try {
@@ -218,6 +221,96 @@ router.delete('/:id', async (req, res) => {
 
 })
 
+
+
+
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: 'http://localhost:3000/usuarios/auth/google/callback'
+}, async (acessToken, refreshToken, profile, done) => {
+    try {
+
+        //verifica se o usuário existe
+        const user = await Usuario.findOne({googleId: profile.id})
+
+        if (user) {
+            return (done, user)
+        }
+
+        //criando a senha
+        const senha = 'ertegvttrdhbtyb' + profile.id
+        const salt = await bcrypt.genSalt(12)
+        const passwordHash = await bcrypt.hash(senha, salt)
+
+        const newUser = new Usuario({
+            nome: profile.displayName,
+            email: profile.emails[0].value,
+            senha: passwordHash,
+            googleId: profile.id
+        })
+
+        await newUser.save()
+
+
+        return done(null, newUser)
+
+
+        
+    } catch (error) {
+        done(error)
+    }
+}
+))
+
+
+
+
+passport.serializeUser((user, done) => {
+    done(null, user._id)
+})
+
+passport.deserializeUser( async (userId, done) => {
+    try {
+        //verifica se o usuário existe
+        const user = await Usuario.findById(userId, '-senha')
+
+        if (!user){
+            return done( new Error("Usuário não encontrado"))
+        }
+
+        done(null, user)
+    
+    } catch (error) {
+        done(error)
+    }
+})
+
+
+router.get('/auth/google', passport.authenticate('google', {scope: ["profile", "email"]}))
+
+
+
+router.get('/auth/google/callback', passport.authenticate('google', {failureRedirect: "/auth/login"}), (req, res) => {
+    try {
+        
+        const userId = req.user._id
+        const user = req.user
+        const secret = process.env.SECRET 
+
+        const token = jwt.sign({
+            id: user._id,
+        },
+        secret,
+    )
+
+    res.status(200).json({msg: "Autentificação realizada com sucesso!", token, userId})
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({msg:'Algo deu errado. Tenta novamente mais tarde!'})
+    }
+})
 
 
 module.exports = router
