@@ -8,6 +8,11 @@ const session = require('express-session')
 
 const app = express()
 
+// app.use(cors({
+//     origin: 'http://localhost:3001', // URL do seu front-end
+//     credentials: true, // Permite enviar cookies com a requisição
+//   }));
+
 app.use(cors())
 app.options("*", cors())
 
@@ -26,6 +31,7 @@ app.use(session({
     secret: 'secret',
     resave: false,
     saveUninitialized: true,
+    cookie: {secure: false}
 }))
 
 app.use(passport.initialize())

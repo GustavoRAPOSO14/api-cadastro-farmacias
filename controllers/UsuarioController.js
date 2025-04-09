@@ -292,8 +292,15 @@ router.get('/auth/google', passport.authenticate('google', {scope: ["profile", "
 
 
 router.get('/auth/google/callback', passport.authenticate('google', {failureRedirect: "/auth/login"}), (req, res) => {
-    try {
-        
+    
+    return res.redirect('/usuarios/auth/session')
+})
+
+
+router.get('/auth/session', (req, res) => {
+
+    if (req.isAuthenticated()){
+
         const userId = req.user._id
         const user = req.user
         const secret = process.env.SECRET 
@@ -301,15 +308,12 @@ router.get('/auth/google/callback', passport.authenticate('google', {failureRedi
         const token = jwt.sign({
             id: user._id,
         },
-        secret,
-    )
+        secret,)
 
-    res.status(200).json({msg: "Autentificação realizada com sucesso!", token, userId})
+        return res.status(200).json({msg: "Autentificação realizada com sucesso!", token, userId})
 
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({msg:'Algo deu errado. Tenta novamente mais tarde!'})
     }
+    res.status(401).json({msg: 'Usuário não autentificado'})
 })
 
 
