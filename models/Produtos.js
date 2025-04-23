@@ -11,8 +11,8 @@ const Produtos = mongoose.model('Produtos', {
     quantidade: Number,
     validade: String,
     lote: String,
-    label: String
-
+    label: String,
+    imagem_url: String
 })
 
 module.exports = Produtos
