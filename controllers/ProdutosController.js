@@ -1,6 +1,10 @@
 const router = require('express').Router()
 const Produtos = require('../models/Produtos')
+const multer = require('multer')
+const upload = multer({ dest: 'uploads/'})
+const fs = require('fs')
 
+const uploadToDrive = require('../utils/googleDrive')
 
 //Acessando todos os produtos:
 router.get("/", async (req, res) => {
@@ -59,7 +63,7 @@ router.get('/farmacia/:farmaciaId', async (req, res) => {
 
 
 //Registrar o produto:
-router.post("/auth/register", async(req, res) => {
+router.post("/auth/register", upload.single('imagem'), async(req, res) => {
 
     const{farmacia, nome, nome_quimico, preco, quantidade, validade, lote, label} = req.body
 
@@ -96,40 +100,78 @@ router.post("/auth/register", async(req, res) => {
         return res.status(422).json({msg: "O rótulo do produto é obrigatório!"})
     }
 
-    const produto = new Produtos({
-        farmacia,
-        nome,
-        nome_quimico,
-        preco,
-        quantidade,
-        validade,
-        lote,
-        label
-    })
+    if (!req.file) return res.status(422).json({ msg: 'Imagem é obrigatória' });
+    
 
     try {
+
+        const imagem_url = await uploadToDrive(req.file.path, req.file.originalname, req.file.mimetype)
+
+        const produto = new Produtos({
+            farmacia,
+            nome,
+            nome_quimico,
+            preco,
+            quantidade,
+            validade,
+            lote,
+            label,
+            imagem_url
+        })
+
         await produto.save()
+
 
         res.status(201).json({msg: "Produto cadastrado com sucesso!"})
     } catch (error) {
         console.log(error)
         res.status(500).json({msg:"Algo deu errado. Tente novamente mais tarde!"})
+    } finally {
+        try {
+            if (req.file && req.file.path) {
+              fs.unlinkSync(req.file.path);
+            }
+          } catch (err) {
+            console.error('Erro ao deletar imagem temporária:', err);
+          }
     }
 })
 
 
 //Atualiza dados do Produto
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', upload.single('imagem'), async (req, res) => {
 
     const id = req.params.id
     const {farmacia, nome, nome_quimico, preco, quantidade, validade, lote, label} = req.body
 
     try {
-        const produtoUpdated = await Produtos.findByIdAndUpdate(id, {nome, nome_quimico, preco, quantidade, validade, lote, label})
+        const produtoExistente = await Produtos.findById(id)
 
-        if (!produtoUpdated){
-            return res.status(404).json({msg: "Produto não encontrado"})
+        if (!produtoExistente) {
+            return res.status(404).json({ msg: "Produto não encontrado" })
         }
+
+        let imagem_url = produtoExistente.imagem_url // mantém a imagem antiga caso ela exista
+
+        //caso uma nova imagem tenha sido enviada
+        if (req.file) {
+            try {
+                imagem_url = await uploadToDrive(req.file.path, req.file.originalname, req.file.mimetype)
+            } catch (err) {
+                console.error('Erro ao fazer upload da nova imagem:', err)
+                return res.status(500).json({ msg: 'Erro ao atualizar imagem' })
+            } finally {
+                try {
+                    if (req.file.path) {
+                        fs.unlinkSync(req.file.path) // remove imagem temporária local
+                    }
+                } catch (err) {
+                    console.error('Erro ao deletar imagem temporária:', err);
+                }
+            }
+        }
+
+        const produtoUpdated = await Produtos.findByIdAndUpdate(id, {nome, nome_quimico, preco, quantidade, validade, lote, label, imagem_url})
 
         res.status(200).json({msg: "Atualizado com sucesso"})
         
