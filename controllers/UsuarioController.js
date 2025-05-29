@@ -5,6 +5,10 @@ const jwt = require('jsonwebtoken')
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy
 
+const { OAuth2Client } = require('google-auth-library');
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+
 
 //Rota privada
 router.get('/:id', checkToken, async (req, res) => {
@@ -221,100 +225,158 @@ router.delete('/:id', async (req, res) => {
 
 })
 
+// Rota para login social com Google
+router.post('/auth/google', async (req, res) => {
+  const { idToken } = req.body;
 
+  if (!idToken) {
+    return res.status(400).json({ msg: "Token de autenticação não fornecido." });
+  }
 
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: GOOGLE_CLIENT_ID,
+    });
 
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: 'https://api-cadastro-farmacias.onrender.com/usuarios/auth/google/callback'
-}, async (acessToken, refreshToken, profile, done) => {
-    try {
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name, picture, id } = payload;
 
-        //verifica se o usuário existe
-        const user = await Usuario.findOne({email: profile.emails[0].value})
+    let user = await Usuario.findOne({ email });
 
-        if (user) {
-            return done(null, user)
-        }
+    //criando a senha
+    const senha = 'ertegvttrdhbtyb' + id
+    const salt = await bcrypt.genSalt(12)
+    const passwordHash = await bcrypt.hash(senha, salt)
 
-        //criando a senha
-        const senha = 'ertegvttrdhbtyb' + profile.id
-        const salt = await bcrypt.genSalt(12)
-        const passwordHash = await bcrypt.hash(senha, salt)
-
-        const newUser = new Usuario({
-            nome: profile.displayName,
-            email: profile.emails[0].value,
-            senha: passwordHash,
-            googleId: profile.id
-        })
-
-        await newUser.save()
-
-
-        return done(null, newUser)
-
-
-        
-    } catch (error) {
-        done(error)
+    if (!user) {
+      // Cria novo usuário
+      user = new Usuario({
+        nome: name,
+        email,
+        senha: passwordHash,
+        googleId,
+      });
+      await user.save();
     }
-}
-))
 
-
-
-
-passport.serializeUser((user, done) => {
-    done(null, user._id)
-})
-
-passport.deserializeUser( async (userId, done) => {
-    try {
-        //verifica se o usuário existe
-        const user = await Usuario.findById(userId, '-senha')
-
-        if (!user){
-            return done( new Error("Usuário não encontrado"))
-        }
-
-        done(null, user)
-    
-    } catch (error) {
-        done(error)
-    }
-})
-
-
-router.get('/auth/google', passport.authenticate('google', {scope: ["profile", "email"]}))
-
-
-
-router.get('/auth/google/callback', passport.authenticate('google', {failureRedirect: "/auth/login"}), (req, res) => {
-    
-    return res.redirect('/usuarios/auth/session')
-})
-
-
-router.get('/auth/session', (req, res) => {
-
-    if (req.isAuthenticated()){
-
-        const userId = req.user._id
-        const user = req.user
-        const secret = process.env.SECRET 
+    const secret = process.env.SECRET 
 
         const token = jwt.sign({
             id: user._id,
         },
-        secret,)
+        secret,
+    )
 
-        return res.status(200).json({msg: "Autentificação realizada com sucesso!", token, userId})
+    res.status(200).json({
+      msg: 'Login com Google bem-sucedido',
+      token,
+      user: {
+        id: user._id,
+        nome: user.nome,
+        email: user.email,
+      },
+    });
+  } catch (err) {
+    console.error('Erro ao verificar o token Google:', err);
+    res.status(401).json({ msg: 'Token Google inválido' });
+  }
+});
 
-    }
-    res.status(401).json({msg: 'Usuário não autentificado'})
-})
+
+
+
+// passport.use(new GoogleStrategy({
+//     clientID: process.env.GOOGLE_CLIENT_ID,
+//     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+//     callbackURL: 'https://api-cadastro-farmacias.onrender.com/usuarios/auth/google/callback'
+// }, async (acessToken, refreshToken, profile, done) => {
+//     try {
+
+//         //verifica se o usuário existe
+//         const user = await Usuario.findOne({email: profile.emails[0].value})
+
+//         if (user) {
+//             return done(null, user)
+//         }
+
+//         //criando a senha
+//         const senha = 'ertegvttrdhbtyb' + profile.id
+//         const salt = await bcrypt.genSalt(12)
+//         const passwordHash = await bcrypt.hash(senha, salt)
+
+//         const newUser = new Usuario({
+//             nome: profile.displayName,
+//             email: profile.emails[0].value,
+//             senha: passwordHash,
+//             googleId: profile.id
+//         })
+
+//         await newUser.save()
+
+
+//         return done(null, newUser)
+
+
+        
+//     } catch (error) {
+//         done(error)
+//     }
+// }
+// ))
+
+
+
+
+// passport.serializeUser((user, done) => {
+//     done(null, user._id)
+// })
+
+// passport.deserializeUser( async (userId, done) => {
+//     try {
+//         //verifica se o usuário existe
+//         const user = await Usuario.findById(userId, '-senha')
+
+//         if (!user){
+//             return done( new Error("Usuário não encontrado"))
+//         }
+
+//         done(null, user)
+    
+//     } catch (error) {
+//         done(error)
+//     }
+// })
+
+
+// router.get('/auth/google', passport.authenticate('google', {scope: ["profile", "email"]}))
+
+
+
+// router.get('/auth/google/callback', passport.authenticate('google', {failureRedirect: "/auth/login"}), (req, res) => {
+    
+//     return res.redirect('/usuarios/auth/session')
+// })
+
+
+// router.get('/auth/session', (req, res) => {
+
+//     if (req.isAuthenticated()){
+
+//         const userId = req.user._id
+//         const user = req.user
+//         const secret = process.env.SECRET 
+
+//         const token = jwt.sign({
+//             id: user._id,
+//         },
+//         secret,)
+
+//         return res.status(200).json({msg: "Autentificação realizada com sucesso!", token, userId})
+
+//     }
+//     res.status(401).json({msg: 'Usuário não autentificado'})
+// })
 
 
 module.exports = router

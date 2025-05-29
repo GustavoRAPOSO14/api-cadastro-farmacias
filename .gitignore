@@ -1,3 +1,4 @@
 node_modules
 .env
 credentials.json
+temp-credentials.jsontemp-credentials.json
