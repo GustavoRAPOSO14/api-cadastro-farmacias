@@ -181,7 +181,7 @@ router.patch('/:id', async (req, res) => {
   const { nome, email, senha } = req.body;
 
   try {
-    // só verifica e-mail se ele foi enviado
+    // Verifica se o email já está em uso por outro usuário
     if (email) {
       const userExists = await Usuario.findOne({ email: email, _id: { $ne: id } });
       if (userExists) {
@@ -189,11 +189,19 @@ router.patch('/:id', async (req, res) => {
       }
     }
 
-    const usuarioUpdated = await Usuario.findByIdAndUpdate(
-      id,
-      { nome, email, senha },
-      { new: true } // para retornar o usuário atualizado, se quiser
-    );
+    const updateData = {};
+
+    if (nome) updateData.nome = nome;
+    if (email) updateData.email = email;
+
+    if (senha) {
+      // Criptografar a nova senha
+      const salt = await bcrypt.genSalt(12);
+      const passwordHash = await bcrypt.hash(senha, salt);
+      updateData.senha = passwordHash;
+    }
+
+    const usuarioUpdated = await Usuario.findByIdAndUpdate(id, updateData, { new: true });
 
     if (!usuarioUpdated) {
       return res.status(404).json({ msg: 'Usuário não encontrado' });
