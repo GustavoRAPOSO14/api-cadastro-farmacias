@@ -24,21 +24,22 @@ router.get("/", async (req, res) => {
 })
 
 
-//Acessar produto por ID
 router.get("/:id", async (req, res) => {
+  const id = req.params.id;
 
-    const id = req.params.id
-
-    //verifica se o produto existe
-    const produto = await Produtos.findById(id)
+  try {
+    const produto = await Produtos.findById(id).populate("farmacia", "nome cep");
 
     if (!produto) {
-        return res.status(404).json({msg: 'Produto inexistente'})
+      return res.status(404).json({ msg: "Produto inexistente" });
     }
 
-    res.status(200).json({produto})
-
-})
+    res.status(200).json({ produto });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: "Erro no servidor" });
+  }
+});
 
 
 router.get('/farmacia/:farmaciaId', async (req, res) => {

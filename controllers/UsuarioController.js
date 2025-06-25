@@ -177,32 +177,33 @@ router.post('/auth/login', async (req, res) => {
 
 //Atualiza dados do usuário
 router.patch('/:id', async (req, res) => {
+  const id = req.params.id;
+  const { nome, email, senha } = req.body;
 
-    const id = req.params.id
-    const {nome, email, senha} = req.body
-
-    // verifica se o email já foi cadastrado
-    const userExists = await Usuario.findOne({ email: email})
-
-    if (userExists){
-        return res.status(422).json({msg: 'O usuário informado já foi cadastrado!'})
+  try {
+    // só verifica e-mail se ele foi enviado
+    if (email) {
+      const userExists = await Usuario.findOne({ email: email, _id: { $ne: id } });
+      if (userExists) {
+        return res.status(422).json({ msg: 'O email informado já foi cadastrado!' });
+      }
     }
 
-    try {
-        const usuarioUpdated = await Usuario.findByIdAndUpdate(id, {nome, email, senha})
+    const usuarioUpdated = await Usuario.findByIdAndUpdate(
+      id,
+      { nome, email, senha },
+      { new: true } // para retornar o usuário atualizado, se quiser
+    );
 
-        if (!usuarioUpdated){
-            return res.status(404).json({msg: "Usuário não encontrado"})
-        }
-
-        res.status(200).json({msg: "Atualizado com sucesso"})
-        
-    } catch (error) {
-        res.status(500).json({msg: error})
+    if (!usuarioUpdated) {
+      return res.status(404).json({ msg: 'Usuário não encontrado' });
     }
 
-})
-
+    res.status(200).json({ msg: 'Atualizado com sucesso' });
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+});
 
 //Deleta os dados do usuário
 router.delete('/:id', async (req, res) => {
