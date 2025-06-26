@@ -28,7 +28,7 @@ router.get("/:id", async (req, res) => {
   const id = req.params.id;
 
   try {
-    const produto = await Produtos.findById(id).populate("farmacia", "nome cep rua bairro numero uf cidade");
+    const produto = await Produtos.findById(id).populate("farmacia", "nome cep");
 
     if (!produto) {
       return res.status(404).json({ msg: "Produto inexistente" });
