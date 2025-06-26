@@ -151,7 +151,7 @@ router.post('/', async (req, res) => {
             status: status,
             precoTotal: precoTotal,
             usuario: usuario,
-            farmacia: produto.farmacia,
+            farmacia: farmacia,
         });
 
         const savedPedido = await pedido.save();
