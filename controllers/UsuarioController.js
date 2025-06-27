@@ -256,7 +256,7 @@ router.post('/auth/google', async (req, res) => {
     let user = await Usuario.findOne({ email });
 
     //criando a senha
-    const senha = 'ertegvttrdhbtyb' + id
+    const senha = 'ertegvttrdhbtyb' + googleId
     const salt = await bcrypt.genSalt(12)
     const passwordHash = await bcrypt.hash(senha, salt)
 
