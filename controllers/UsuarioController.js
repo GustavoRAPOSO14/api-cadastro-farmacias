@@ -286,6 +286,7 @@ router.post('/auth/google', async (req, res) => {
         id: user._id,
         nome: user.nome,
         email: user.email,
+        senha: senha
       },
     });
   } catch (err) {
