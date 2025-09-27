@@ -4,7 +4,7 @@ const multer = require('multer')
 const upload = multer({ dest: 'uploads/'})
 const fs = require('fs')
 
-const uploadToDrive = require('../utils/googleDrive')
+const uploadToAzure = require('../utils/uploadToAzure');
 
 //Acessando todos os produtos:
 router.get("/", async (req, res) => {
@@ -106,7 +106,9 @@ router.post("/auth/register", upload.single('imagem'), async(req, res) => {
 
     try {
 
-        const imagem_url = await uploadToDrive(req.file.path, req.file.originalname, req.file.mimetype)
+        // const imagem_url = await uploadToDrive(req.file.path, req.file.originalname, req.file.mimetype)
+        const imagem_url = await uploadToAzure(req.file.path, req.file.originalname, req.file.mimetype);
+
 
         const produto = new Produtos({
             farmacia,
