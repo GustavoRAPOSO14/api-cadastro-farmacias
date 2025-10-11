@@ -27,6 +27,11 @@ const Pedido = mongoose.model('Pedido', {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Farmacia'
     },
+    entregador: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Entregadores',
+        default: null
+    },
     dataPedido:{
         type: Date,
         default: Date.now,

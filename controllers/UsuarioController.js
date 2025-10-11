@@ -53,7 +53,7 @@ function checkToken(req, res, next){
 // Registrar Usuário
 router.post('/auth/register', async(req, res) =>{
 
-    const {nome, email, senha, confirmasenha} = req.body
+    const {nome, email, telefone, senha, confirmasenha} = req.body
 
     //validações
     if (!nome){
@@ -68,9 +68,9 @@ router.post('/auth/register', async(req, res) =>{
         return res.status(422).json({msg: 'O email é obrigatório'})
     }
 
-    // if (!telefone){
-    //     return res.status(422).json({msg: 'O telefone é obrigatório'})
-    // }
+    if (!telefone){
+        return res.status(422).json({msg: 'O telefone é obrigatório'})
+    }
 
     // if (!cep){
     //     return res.status(422).json({msg: 'O CEP é obrigatório'})
@@ -106,6 +106,7 @@ router.post('/auth/register', async(req, res) =>{
     const usuario = new Usuario({
         nome,
         email,
+        telefone,
         senha: passwordHash,
         googleId: null
     })
@@ -178,7 +179,7 @@ router.post('/auth/login', async (req, res) => {
 //Atualiza dados do usuário
 router.patch('/:id', async (req, res) => {
   const id = req.params.id;
-  const { nome, email, senha } = req.body;
+  const { nome, email, telefone, senha } = req.body;
 
   try {
     // Verifica se o email já está em uso por outro usuário
@@ -193,6 +194,7 @@ router.patch('/:id', async (req, res) => {
 
     if (nome) updateData.nome = nome;
     if (email) updateData.email = email;
+    if (telefone) updateData.telefone = telefone;
 
     if (senha) {
       // Criptografar a nova senha
@@ -266,6 +268,7 @@ router.post('/auth/google', async (req, res) => {
         nome: name,
         email,
         senha: passwordHash,
+        telefone: null,
         googleId,
       });
       await user.save();
