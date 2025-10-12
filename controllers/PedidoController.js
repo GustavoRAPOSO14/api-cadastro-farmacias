@@ -316,6 +316,48 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+// Atualiza o status do pedido com verificação de código (4 primeiros dígitos do CNPJ da farmácia)
+router.put('/:id/farmacia', async (req, res) => {
+    const { status, codigo } = req.body;
+
+    // Verifica se o código foi enviado
+    if (!codigo) {
+        return res.status(400).json({ msg: 'O código de verificação é obrigatório.' });
+    }
+
+    try {
+        // Busca o pedido e a farmácia relacionada
+        const pedido = await Pedido.findById(req.params.id).populate('farmacia', 'cnpj');
+
+        if (!pedido) {
+            return res.status(404).json({ msg: 'Pedido não encontrado.' });
+        }
+
+        if (!pedido.farmacia || !pedido.farmacia.cnpj) {
+            return res.status(400).json({ msg: 'CNPJ da farmácia não disponível.' });
+        }
+
+        // Extrai os 4 primeiros dígitos do CNPJ
+        const primeiros4 = pedido.farmacia.cnpj.slice(0, 4);
+
+        // Compara com o código informado
+        if (codigo !== primeiros4) {
+            return res.status(401).json({ msg: 'Código incorreto. Atualização não autorizada.' });
+        }
+
+        // Atualiza o status se o código estiver correto
+        pedido.status = status;
+        await pedido.save();
+
+        return res.status(200).json({ msg: 'Status do pedido atualizado com sucesso pela farmácia!', pedido });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ msg: 'Erro ao atualizar o status do pedido pela farmácia.' });
+    }
+});
+
+
 
 
 
