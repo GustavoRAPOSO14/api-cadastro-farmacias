@@ -57,6 +57,9 @@ app.use('/usuarios', UsuarioController)
 const PedidoController = require('./controllers/PedidoController')
 app.use('/pedidos', PedidoController)
 
+const EntregadorController = require('./controllers/EntregadorController')
+app.use('/entregadores', EntregadorController)
+
 
 
 

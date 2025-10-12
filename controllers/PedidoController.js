@@ -8,7 +8,7 @@ const PedidoItem = require('../models/PedidoItem');
 // Exemplo de rota GET
 router.get('/', async (req, res) => {
     try {
-        const pedidos = await Pedido.find().populate('usuario', 'nome').sort({ 'dataPedido': -1 });
+        const pedidos = await Pedido.find().populate('usuario', 'nome').populate('entregador', 'nome').sort({ 'dataPedido': -1 });
         if (pedidos.length === 0) {
             return res.status(404).json({ msg: 'Não há pedidos no momento' });
         }
@@ -118,7 +118,7 @@ router.post('/', async (req, res) => {
 
         const precoTotal = totalPrices.reduce((a, b) => a + b, 0)
 
-        const { endereco1, endereco2, city, cep, pais, telefone, status, usuario, farmacia } = req.body
+        const { endereco1, endereco2, city, cep, pais, telefone, status, usuario, entregador, farmacia } = req.body
 
         if (!endereco1) {
             return res.status(422).json({ msg: 'O endereço é obrigatório' })
@@ -151,6 +151,7 @@ router.post('/', async (req, res) => {
             status: status,
             precoTotal: precoTotal,
             usuario: usuario,
+            entregador: null,
             farmacia: farmacia,
         });
 
@@ -170,6 +171,7 @@ router.get('/:id', async (req, res) => {
     const pedido = await Pedido.findById(id)
         .populate('usuario', 'nome')
         .populate('farmacia', 'nome cep rua bairro numero uf cidade')
+        .populate('entregador', 'nome')
         .populate({ path: 'itensPedido', populate: 'product' });
 
 
@@ -226,23 +228,137 @@ router.get('/usuarios/:usuarioId', async (req, res) => {
 
 
 // atualiza o status do pedido
-router.put('/:id', async (req, res) => {
-    const pedido = await Pedido.findByIdAndUpdate(
-        req.params.id,
-        {
-            status: req.body.status
-        },
-        { new: true }
-    )
+// router.put('/:id', async (req, res) => {
+//     const pedido = await Pedido.findByIdAndUpdate(
+//         req.params.id,
+//         {
+//             status: req.body.status
+//         },
+//         { new: true }
+//     )
 
-    if (!pedido) {
-        return res.status(404).json({ msg: "Pedido não encontrado" })
+//     if (!pedido) {
+//         return res.status(404).json({ msg: "Pedido não encontrado" })
+//     }
+
+//     res.status(200).json({ msg: "Atualizado com sucesso" })
+//     //res.send(pedido)
+
+// })
+
+// Atribui um entregador a um pedido
+router.put('/:id/entregador', async (req, res) => {
+    const { entregadorId } = req.body;
+
+    if (!entregadorId) {
+        return res.status(400).json({ msg: 'O ID do entregador é obrigatório.' });
     }
 
-    res.status(200).json({ msg: "Atualizado com sucesso" })
-    //res.send(pedido)
+    try {
+        const pedido = await Pedido.findByIdAndUpdate(
+            req.params.id,
+            { entregador: entregadorId },
+            { new: true } // retorna o documento atualizado
+        );
 
-})
+        if (!pedido) {
+            return res.status(404).json({ msg: 'Pedido não encontrado.' });
+        }
+
+        res.status(200).json({
+            msg: 'Entregador atribuído com sucesso!',
+            pedido
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: 'Erro ao atribuir entregador.' });
+    }
+});
+
+// Atualiza o status do pedido com verificação de código (últimos 4 dígitos do telefone do usuário)
+router.put('/:id', async (req, res) => {
+    const { status, codigo } = req.body;
+
+    // Verifica se o código foi enviado
+    if (!codigo) {
+        return res.status(400).json({ msg: 'O código de verificação é obrigatório.' });
+    }
+
+    try {
+        // Busca o pedido e o usuário relacionado
+        const pedido = await Pedido.findById(req.params.id).populate('usuario', 'telefone');
+
+        if (!pedido) {
+            return res.status(404).json({ msg: 'Pedido não encontrado.' });
+        }
+
+        if (!pedido.usuario || !pedido.usuario.telefone) {
+            return res.status(400).json({ msg: 'Telefone do usuário não disponível.' });
+        }
+
+        // Extrai os 4 últimos dígitos do telefone do usuário
+        const ultimos4 = pedido.usuario.telefone.slice(-4);
+
+        // Compara com o código informado
+        if (codigo !== ultimos4) {
+            return res.status(401).json({ msg: 'Código incorreto. Atualização não autorizada.' });
+        }
+
+        // Atualiza o status se o código estiver correto
+        pedido.status = status;
+        await pedido.save();
+
+        return res.status(200).json({ msg: 'Status do pedido atualizado com sucesso!', pedido });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ msg: 'Erro ao atualizar o status do pedido.' });
+    }
+});
+
+// Atualiza o status do pedido com verificação de código (4 primeiros dígitos do CNPJ da farmácia)
+router.put('/:id/farmacia', async (req, res) => {
+    const { status, codigo } = req.body;
+
+    // Verifica se o código foi enviado
+    if (!codigo) {
+        return res.status(400).json({ msg: 'O código de verificação é obrigatório.' });
+    }
+
+    try {
+        // Busca o pedido e a farmácia relacionada
+        const pedido = await Pedido.findById(req.params.id).populate('farmacia', 'cnpj');
+
+        if (!pedido) {
+            return res.status(404).json({ msg: 'Pedido não encontrado.' });
+        }
+
+        if (!pedido.farmacia || !pedido.farmacia.cnpj) {
+            return res.status(400).json({ msg: 'CNPJ da farmácia não disponível.' });
+        }
+
+        // Extrai os 4 primeiros dígitos do CNPJ
+        const primeiros4 = pedido.farmacia.cnpj.slice(0, 4);
+
+        // Compara com o código informado
+        if (codigo !== primeiros4) {
+            return res.status(401).json({ msg: 'Código incorreto. Atualização não autorizada.' });
+        }
+
+        // Atualiza o status se o código estiver correto
+        pedido.status = status;
+        await pedido.save();
+
+        return res.status(200).json({ msg: 'Status do pedido atualizado com sucesso pela farmácia!', pedido });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ msg: 'Erro ao atualizar o status do pedido pela farmácia.' });
+    }
+});
+
+
+
 
 
 //Deleta pedido

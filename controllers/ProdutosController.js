@@ -159,7 +159,7 @@ router.patch('/:id', upload.single('imagem'), async (req, res) => {
         //caso uma nova imagem tenha sido enviada
         if (req.file) {
             try {
-                imagem_url = await uploadToDrive(req.file.path, req.file.originalname, req.file.mimetype)
+                imagem_url = await uploadToAzure(req.file.path, req.file.originalname, req.file.mimetype)
             } catch (err) {
                 console.error('Erro ao fazer upload da nova imagem:', err)
                 return res.status(500).json({ msg: 'Erro ao atualizar imagem' })
