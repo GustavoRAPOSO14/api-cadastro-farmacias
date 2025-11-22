@@ -145,15 +145,11 @@ router.post('/auth/register', async(req, res) =>{
 //Login da Farmacia
 router.post('/auth/login', async (req, res) => {
 
-    const {cnpj, email, senha} = req.body
+    const {cnpj, senha} = req.body
 
     //validações
     if (!cnpj){
         return res.status(422).json({msg: 'O CNPJ é obrigatório'})
-    }
-
-    if (!email){
-        return res.status(422).json({msg: 'O email é obrigatório'})
     }
 
     if (!senha){
