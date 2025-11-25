@@ -170,7 +170,7 @@ router.get('/:id', async (req, res) => {
     const id = req.params.id
     const pedido = await Pedido.findById(id)
         .populate('usuario', 'nome')
-        .populate('farmacia', 'nome cep rua bairro numero uf cidade')
+        .populate('farmacia', 'cnpj nome cep rua bairro numero uf cidade')
         .populate('entregador', 'nome')
         .populate({ path: 'itensPedido', populate: 'product' });
 
