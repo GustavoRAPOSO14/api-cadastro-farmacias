@@ -226,6 +226,39 @@ router.get('/usuarios/:usuarioId', async (req, res) => {
 });
 
 
+// Lista todos os pedidos aceitos de um entregador
+router.get('/entregador/:entregadorId', async (req, res) => {
+    try {
+        const entregadorId = req.params.entregadorId;
+
+        // Status que representam pedidos aceitos pelo entregador
+        const statusAceitos = ['Pendente', 'A caminho', 'Concluido'];
+
+        const pedidos = await Pedido.find({
+            entregador: entregadorId,
+            status: { $in: statusAceitos }
+        })
+        .populate('usuario', 'nome')
+        .populate('farmacia', 'nome')
+        .populate('entregador', 'nome')
+        .populate({ path: 'itensPedido', populate: 'product' })
+        .sort({ dataPedido: -1 });
+
+        if (pedidos.length === 0) {
+            return res.status(404).json({ msg: 'Nenhum pedido aceito encontrado para este entregador' });
+        }
+
+        res.status(200).json(pedidos);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: 'Erro ao buscar pedidos aceitos do entregador.' });
+    }
+});
+
+
+
+
 
 // atualiza o status do pedido
 // router.put('/:id', async (req, res) => {
